@@ -1,4 +1,4 @@
-const CACHE = "gekka-shobo-shell-v2";
+const CACHE = "gekka-shobo-shell-v3";
 const FILES = [
   "./",
   "./index.html",
@@ -23,7 +23,7 @@ self.addEventListener("install", (event) =>
     (async () => {
       const cache = await caches.open(CACHE);
       await cache.addAll(FILES);
-      // Optional until the user supplies the MP3. Never fail installation for it.
+      // Cache the supplied track; a failed audio download must not block the shell.
       try {
         const url = new URL("./audio/bgm.mp3", self.registration.scope);
         const response = await fetch(url);

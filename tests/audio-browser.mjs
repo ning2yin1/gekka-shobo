@@ -33,7 +33,10 @@ function testWave() {
     );
   return bytes;
 }
-const wave = testWave();
+const realMusic = process.env.TEST_REAL_BGM === "1";
+const wave = realMusic
+  ? await readFile(resolve(root, "audio/bgm.mp3"))
+  : testWave();
 let musicRequests = 0;
 const mime = {
   ".html": "text/html",
@@ -58,7 +61,7 @@ const server = createServer(async (req, res) => {
     if (path === "audio/bgm.mp3") {
       musicRequests++;
       res.writeHead(200, {
-        "Content-Type": "audio/wav",
+        "Content-Type": realMusic ? "audio/mpeg" : "audio/wav",
         "Content-Length": wave.length,
       });
       res.end(wave);
@@ -279,7 +282,15 @@ try {
   assert.equal(await page.evaluate(() => window.__music[0].paused), true);
   await page.getByLabel("BGMを有効にする").check();
   await page.getByText("BGMを再生中です。", { exact: true }).waitFor();
-  // Observe currentTime wrap over the two-second fixture, proving actual loop.
+  // Seek near the supplied track end to verify native looping without a 3-minute wait.
+  if (realMusic) {
+    const duration = await page.evaluate(() => window.__music[0].duration);
+    assert.ok(duration > 189 && duration < 191);
+    await page.evaluate(() => {
+      window.__music[0].currentTime = window.__music[0].duration - 0.6;
+    });
+    await page.waitForFunction(() => !window.__music[0].seeking);
+  }
   await page.evaluate(
     () => (window.__lastTime = window.__music[0].currentTime),
   );
@@ -294,7 +305,7 @@ try {
     { timeout: 5000 },
   );
   const cached = await page.evaluate(async () => {
-    const c = await caches.open("gekka-shobo-shell-v2");
+    const c = await caches.open("gekka-shobo-shell-v3");
     return !!(await c.match(new URL("./audio/bgm.mp3", location.href)));
   });
   assert.equal(cached, true);
@@ -310,7 +321,7 @@ try {
         headers: { Range: "bytes=0-43" },
       }),
       bad = await fetch("./audio/bgm.mp3", {
-        headers: { Range: "bytes=999999-" },
+        headers: { Range: "bytes=999999999-" },
       });
     return {
       status: ok.status,
@@ -328,13 +339,11 @@ try {
   );
   assert.equal(backup.settings.bgm, true);
   assert.equal(backup.settings.bgmVolume, 0.42);
-  await page
-    .getByLabel("JSONバックアップを選択")
-    .setInputFiles({
-      name: "old.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(legacy)),
-    });
+  await page.getByLabel("JSONバックアップを選択").setInputFiles({
+    name: "old.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(legacy)),
+  });
   await page.getByRole("button", { name: "全置換で復元", exact: true }).click();
   await page.locator("#confirm-dialog button[value=ok]").click();
   await page.getByText("BGMはOFFです。", { exact: true }).waitFor();
@@ -348,7 +357,8 @@ try {
   assert.deepEqual(errors, []);
   assert.ok(musicRequests >= 1);
   console.log(
-    "Audio and legacy-data checks passed with synthetic WAV only: old DB/JSON retention, gestures/autoplay retry, loop, independent/smoothed volumes, route continuity, background pause/manual resume, bounded harmonic/noise effects, saved preferences, offline audio and Range requests. User MP3 and iPhone remain untested.",
+    (realMusic ? "Supplied MP3" : "Synthetic WAV") +
+      " audio and legacy-data checks passed: old DB/JSON retention, gestures/autoplay retry, loop, independent/smoothed volumes, route continuity, background pause/manual resume, bounded harmonic/noise effects, saved preferences, offline audio and Range requests. Physical iPhone remains untested.",
   );
 } finally {
   await browser.close();
