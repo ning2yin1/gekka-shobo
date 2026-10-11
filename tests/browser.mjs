@@ -197,7 +197,9 @@ try {
   await nav("#settings");
   await page.getByLabel("効果音を有効にする").check();
   await page.getByRole("slider", { name: "効果音の音量" }).fill("15");
-  await page.getByRole("slider").dispatchEvent("change");
+  await page
+    .getByRole("slider", { name: "効果音の音量" })
+    .dispatchEvent("change");
   await click("音を試す");
   const dl = page.waitForEvent("download");
   await click("完全JSONバックアップ");
@@ -384,26 +386,90 @@ try {
     await page.locator(".flashcard .meaning").textContent(),
     "食感、口当たり",
   );
-  // Normal card controls stay in the viewport at 320x568 and 375x667.
+  // Both faces fit the actual viewport, including a short browser viewport.
   for (const [width, height] of [
+    [320, 480],
     [320, 568],
     [375, 667],
     [390, 844],
+    [430, 932],
   ]) {
     await page.setViewportSize({ width, height });
-    const box = await page
-      .getByRole("button", { name: "覚えた！", exact: true })
-      .boundingBox();
-    assert.ok(
-      box.y + box.height <= height - 68,
-      JSON.stringify({ width, height, box }),
-    );
-    assert.ok(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    );
+    for (let face = 0; face < 2; face++) {
+      const box = await page
+        .getByRole("button", { name: "覚えた！", exact: true })
+        .boundingBox();
+      assert.ok(
+        box.y + box.height <= height,
+        JSON.stringify({ width, height, box }),
+      );
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      );
+      assert.equal(
+        await page
+          .locator("main.study")
+          .evaluate((el) => el.scrollHeight <= el.clientHeight),
+        true,
+      );
+      assert.equal(await page.locator(".bottom-nav").isVisible(), false);
+      for (const name of ["次へ", "覚えた！", "詳細を見る", "★ 苦手"]) {
+        const buttonBox = await page
+          .getByRole("button", { name, exact: true })
+          .boundingBox();
+        assert.ok(buttonBox.height >= 44);
+      }
+      await page.locator(".flashcard").click();
+      await page.waitForTimeout(100);
+    }
   }
+  await page.setViewportSize({ width: 375, height: 667 });
+  const safeArea = await page.addStyleTag({
+    content: "body.is-study main.study{padding-top:56px;padding-bottom:46px}",
+  });
+  assert.equal(
+    await page
+      .locator("main.study")
+      .evaluate((el) => el.scrollHeight <= el.clientHeight),
+    true,
+  );
+  await page.locator(".flashcard").click();
+  await page.locator(".traditional").waitFor();
+  assert.equal(
+    await page
+      .locator("main.study")
+      .evaluate((el) => el.scrollHeight <= el.clientHeight),
+    true,
+  );
+  await safeArea.evaluate((el) => el.remove());
+  // Extremely long content can scroll without hiding or clipping controls.
+  const originalTraditional = await page.locator(".traditional").textContent();
+  await page
+    .locator(".traditional")
+    .evaluate((el) => (el.textContent = "月光照進靜靜的書房".repeat(40)));
+  assert.ok(
+    await page
+      .locator("main.study")
+      .evaluate((el) => el.scrollHeight > el.clientHeight),
+  );
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  );
+  await page
+    .locator("main.study")
+    .evaluate((el) => (el.scrollTop = el.scrollHeight));
+  const lastControl = await page
+    .getByRole("button", { name: "覚えた！", exact: true })
+    .boundingBox();
+  assert.ok(lastControl.y + lastControl.height <= 667);
+  await page
+    .locator(".traditional")
+    .evaluate((el, text) => (el.textContent = text), originalTraditional);
+  await page.locator("main.study").evaluate((el) => (el.scrollTop = 0));
   await page.emulateMedia({ reducedMotion: "reduce" });
   assert.equal(
     await page
@@ -418,7 +484,7 @@ try {
   await page.screenshot({ path: ".test-results/home.png", fullPage: true });
   assert.deepEqual(errors, []);
   console.log(
-    "Browser checks passed: registration, 3 examples, shared books, both directions, selection, detail return, rounds, mastery, stars, search, IndexedDB reload, XSS, sound settings, JSON validation/restore, transaction rollback, CSV file/update/cancel/130 rows/export, membership removal/deletion, tab lock, subpath, offline, 3 mobile sizes, reduced motion.",
+    "Browser checks passed: registration, 3 examples, shared books, both directions, selection, detail return, rounds, mastery, stars, search, IndexedDB reload, XSS, sound settings, JSON validation/restore, transaction rollback, CSV file/update/cancel/130 rows/export, membership removal/deletion, tab lock, subpath, offline, 5 mobile sizes/both faces/no-scroll/safe-area simulation/long text, reduced motion.",
   );
 } finally {
   await browser.close();

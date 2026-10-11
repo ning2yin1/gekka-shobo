@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "legacy-entry",
+      "entry_type": "word",
+      "examples": [
+        {
+          "chinese": "沒想到你也在這裡！",
+          "pinyin": "Méi xiǎng dào nǐ yě zài zhè lǐ!",
+          "translation": "まさかあなたもここにいるなんて！"
+        }
+      ],
+      "mastered": true,
+      "starred": true,
+      "created_at": "2026-10-11T08:07:50.816Z",
+      "updated_at": "2026-10-11T08:07:50.816Z",
+      "traditional": "沒想到",
+      "simplified": "没想到",
+      "pinyin": "méi xiǎng dào",
+      "meaning": "思いもよらなかった",
+      "part_of_speech": "",
+      "measure_word": "",
+      "usage": "",
+      "grammar_notes": "",
+      "nuance": "",
+      "register": "",
+      "synonyms": "",
+      "synonym_differences": "",
+      "regional_usage": "",
+      "regional_alternatives": "",
+      "etymology": "",
+      "notes": ""
+    }
+  ],
+  "books": [
+    {
+      "id": "legacy-book",
+      "name": "昔からの書房",
+      "created_at": "2026-10-01T00:00:00.000Z"
+    }
+  ],
+  "memberships": [
+    {
+      "id": "95841ef6-7a3d-4ef6-8482-44fa8742ded6",
+      "entryId": "legacy-entry",
+      "bookId": "legacy-book",
+      "order": 0
+    }
+  ],
+  "sessions": [
+    {
+      "scope": "star",
+      "currentId": "legacy-entry",
+      "round": 1,
+      "back": true
+    }
+  ],
+  "settings": {
+    "direction": "ja-zh",
+    "sound": true,
+    "volume": 0.32
+  }
+}

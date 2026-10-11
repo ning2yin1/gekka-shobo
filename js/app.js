@@ -29,7 +29,8 @@ let state,
   page = 0,
   detailTab = "examples",
   returnHash = "#list",
-  pendingUpdate = null;
+  pendingUpdate = null,
+  lastScreen = null;
 const titles = {
   traditional: "繁体字",
   simplified: "簡体字",
@@ -119,6 +120,7 @@ async function change(fn, { renderAfter = true } = {}) {
     }
     await saveState(next, state);
     state = next;
+    audio.applyPreferences(state.settings);
     if (renderAfter) render();
     return true;
   } catch (e) {
@@ -392,7 +394,12 @@ function study(scope) {
       "div",
       { class: "study-heading" },
       h("h1", {}, scopeName(scope)),
-      link("戻る", "#home", "button subtle compact"),
+      h(
+        "div",
+        { class: "study-back-actions" },
+        musicResumeButton(),
+        link("戻る", "#home", "button subtle compact"),
+      ),
     ),
   );
   if (!e) {
@@ -401,6 +408,13 @@ function study(scope) {
       h(
         "div",
         { class: "clear" },
+        h(
+          "div",
+          { class: "clear-sparks", "aria-hidden": "true" },
+          ...Array.from({ length: 5 }, (_, i) =>
+            h("i", { style: `--i:${i}` }, "✧"),
+          ),
+        ),
         h(
           "div",
           { class: "moon", "aria-hidden": "true" },
@@ -1275,11 +1289,116 @@ function download(text, name, type) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+function musicResumeButton() {
+  return button(
+    "♫",
+    () => audio.startMusic(state.settings),
+    "music-resume subtle compact",
+    {
+      "data-music-resume": "",
+      "aria-label": "BGMを再開",
+      title: "BGMを再開",
+    },
+  );
+}
+function updateMusicStatus() {
+  const status = audio.musicStatus;
+  const retry =
+    state?.settings.bgm &&
+    audio.musicAvailable &&
+    ["paused", "blocked", "error"].includes(status);
+  for (const el of document.querySelectorAll("[data-music-resume]"))
+    el.hidden = !retry;
+  const statusEl = document.querySelector("#music-status");
+  if (statusEl)
+    statusEl.textContent = {
+      playing: "BGMを再生中です。",
+      paused: "再生ボタンで、続きから再開できます。",
+      blocked: "再生が許可されていません。再生ボタンを押してください。",
+      loading: "音楽を読み込んでいます…",
+      error: "BGMを読み込めませんでした。オンラインで再試行してください。",
+      off: "BGMはOFFです。",
+      unavailable: "BGM音源は準備中です。",
+    }[status];
+  const retryEl = document.querySelector("#music-retry");
+  if (retryEl) retryEl.hidden = !retry;
+}
+audio.onMusicStatus = updateMusicStatus;
+function musicSettings() {
+  app.append(h("h2", {}, "静かな書房の旋律"));
+  const toggle = h("input", {
+    type: "checkbox",
+    checked: state.settings.bgm,
+    disabled: !audio.musicAvailable,
+  });
+  toggle.onchange = async () => {
+    const enabled = toggle.checked;
+    // Safari needs play/resume in the original user gesture, before DB save.
+    const started = audio.startMusic({ ...state.settings, bgm: enabled });
+    if (
+      !(await change((s) => {
+        s.settings.bgm = enabled;
+      }))
+    )
+      audio.applyPreferences(state.settings);
+    await started;
+    updateMusicStatus();
+  };
+  app.append(h("label", { class: "check" }, toggle, "BGMを有効にする"));
+  const output = h(
+    "output",
+    {},
+    `${Math.round(state.settings.bgmVolume * 100)}%`,
+  );
+  const volume = h("input", {
+    type: "range",
+    min: 0,
+    max: 100,
+    step: 1,
+    value: Math.round(state.settings.bgmVolume * 100),
+    "aria-label": "BGMの音量",
+  });
+  volume.oninput = () => {
+    output.textContent = `${volume.value}%`;
+    audio.setMusicVolume(Number(volume.value) / 100);
+  };
+  volume.onchange = async () => {
+    if (
+      !(await change((s) => {
+        s.settings.bgmVolume = Number(volume.value) / 100;
+      }))
+    )
+      audio.setMusicVolume(state.settings.bgmVolume);
+  };
+  const retry = button(
+    "BGMを再生",
+    () => audio.startMusic(state.settings),
+    "primary",
+    { id: "music-retry" },
+  );
+  app.append(
+    h("label", {}, "BGM音量 ", output),
+    volume,
+    h(
+      "div",
+      { class: "music-notice" },
+      h("p", { id: "music-status", role: "status" }),
+      retry,
+    ),
+    p(
+      "初期設定はOFF・音量15%。画面を切り替えても続きから流れます。背景に移ると一時停止し、♫ボタンで再開できます。",
+      "form-note",
+    ),
+  );
+}
 function settings() {
   app.className = "settings";
-  app.append(h("h1", {}, "書房の設定"), h("h2", {}, "小さな音のしるし"));
+  app.append(h("h1", {}, "書房の設定"));
+  musicSettings();
+  app.append(h("h2", {}, "小さな音のしるし"));
   const sound = h("input", { type: "checkbox", checked: state.settings.sound });
   sound.onchange = async () => {
+    if (sound.checked) audio.unlock();
     if (
       await change((s) => {
         s.settings.sound = sound.checked;
@@ -1301,6 +1420,7 @@ function settings() {
     output.textContent = `${volume.value}%`;
   };
   volume.onchange = async () => {
+    audio.unlock();
     if (
       await change((s) => {
         s.settings.volume = Number(volume.value) / 100;
@@ -1481,6 +1601,7 @@ function render() {
   app.replaceChildren();
   app.className = "";
   const [route, arg] = location.hash.replace(/^#/, "").split("/");
+  document.body.classList.toggle("is-study", route === "study");
   document.querySelectorAll(".bottom-nav a").forEach((a) => {
     if (a.hash === "#" + (route || "home"))
       a.setAttribute("aria-current", "page");
@@ -1492,6 +1613,10 @@ function render() {
   else if (route === "add") add(arg);
   else if (route === "settings") settings();
   else home();
+  const screen = `${route || "home"}/${arg || ""}`;
+  if (screen !== lastScreen) app.classList.add("screen-enter");
+  lastScreen = screen;
+  updateMusicStatus();
 }
 window.addEventListener("hashchange", () => {
   render();
@@ -1554,6 +1679,8 @@ async function boot() {
       });
     }
     state = await loadState();
+    audio.applyPreferences(state.settings);
+    document.querySelector(".masthead").append(musicResumeButton());
     render();
     await registerSW();
   } catch (e) {

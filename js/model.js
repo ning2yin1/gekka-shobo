@@ -27,7 +27,13 @@ export function emptyState() {
     books: [],
     memberships: [],
     sessions: [],
-    settings: { direction: "zh-ja", sound: false, volume: 0.25 },
+    settings: {
+      direction: "zh-ja",
+      sound: false,
+      volume: 0.25,
+      bgm: false,
+      bgmVolume: 0.15,
+    },
   };
 }
 export function makeEntry(input) {
@@ -284,7 +290,13 @@ export function validateBackup(value) {
     typeof t.volume !== "number" ||
     !Number.isFinite(t.volume) ||
     t.volume < 0 ||
-    t.volume > 1
+    t.volume > 1 ||
+    (t.bgm !== undefined && typeof t.bgm !== "boolean") ||
+    (t.bgmVolume !== undefined &&
+      (typeof t.bgmVolume !== "number" ||
+        !Number.isFinite(t.bgmVolume) ||
+        t.bgmVolume < 0 ||
+        t.bgmVolume > 1))
   )
     throw new Error("設定が不正です");
   // Whitelist the document shape, then detach it from the parsed input.
@@ -294,6 +306,12 @@ export function validateBackup(value) {
     books: value.books,
     memberships: value.memberships,
     sessions: value.sessions,
-    settings: { direction: t.direction, sound: t.sound, volume: t.volume },
+    settings: {
+      direction: t.direction,
+      sound: t.sound,
+      volume: t.volume,
+      bgm: t.bgm ?? false,
+      bgmVolume: t.bgmVolume ?? 0.15,
+    },
   });
 }

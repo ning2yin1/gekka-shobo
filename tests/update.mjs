@@ -28,7 +28,7 @@ const server = createServer(async (req, res) => {
     let bytes = await readFile(file);
     if (relative === "sw.js")
       bytes = Buffer.from(
-        bytes.toString().replace("shell-v1", `shell-test${version}`),
+        bytes.toString().replace(/shell-v\d+/, `shell-test${version}`),
       );
     res.writeHead(200, {
       "Content-Type": mime[extname(file)] || "text/plain",
