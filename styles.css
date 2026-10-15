@@ -775,7 +775,7 @@ main.study {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto 4px auto minmax(min-content, 1fr) auto auto auto;
+  grid-template-rows: auto auto auto auto minmax(min-content, 1fr) auto auto;
   align-content: stretch;
   gap: 8px;
   padding: calc(12px + env(safe-area-inset-top)) 20px
@@ -1053,4 +1053,93 @@ body.is-study #toast {
 }
 .masthead:has(.music-resume:not([hidden])) .header-note {
   display: none;
+}
+
+/* Position controls and secondary actions keep the lower edge dedicated to Next. */
+.study-progress {
+  min-width: 0;
+}
+.position-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.position-controls input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  accent-color: #d7c494;
+}
+.position-controls button {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+  flex: 0 0 44px;
+}
+.study-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.study-options .direction {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+.undo-master {
+  min-height: 44px;
+  white-space: nowrap;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: -4px;
+}
+.icon-guide {
+  margin: 0 auto 0 0;
+  font-size: 11px;
+  color: #d4cde0;
+}
+.icon-button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 25px;
+}
+.card-tools .star.active {
+  color: #f9d77f;
+  background: #5a4e57;
+}
+.card-tools .master-button {
+  color: #3e5a59;
+  background: linear-gradient(135deg, #f8f3e8, #dedccf);
+  border-color: #a6bab0;
+}
+.study .study-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+}
+@media (max-height: 600px) {
+  main.study {
+    gap: 4px;
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+  .flashcard {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+  .face-label {
+    margin-bottom: 6px;
+  }
 }

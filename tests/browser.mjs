@@ -127,7 +127,7 @@ try {
   await page.locator(".flashcard").dispatchEvent("click");
   assert.equal(await page.locator(".flashcard .traditional").count(), 1);
   await page.evaluate(() => getSelection().removeAllRanges());
-  await click("☆ 苦手");
+  await click("★ 苦手");
   await click("覚えた！");
   await page.waitForTimeout(150);
   assert.equal(

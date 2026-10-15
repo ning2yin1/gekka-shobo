@@ -129,6 +129,35 @@ export function advance(s, scope, master = false) {
   session.back = false;
   return session;
 }
+// Change position within the current eligible queue without advancing a round.
+export function seekStudy(s, scope, index) {
+  const entries = studyEntries(s, scope);
+  if (!Number.isInteger(index) || index < 0 || index >= entries.length) return;
+  const session = getSession(s, scope);
+  session.currentId = entries[index].id;
+  session.back = false;
+}
+export function captureMasterUndo(s, scope) {
+  const session = getSession(s, scope);
+  const entry = s.entries.find((e) => e.id === session.currentId);
+  return entry
+    ? {
+        scope,
+        entryId: entry.id,
+        mastered: entry.mastered,
+        updated_at: entry.updated_at,
+        session: structuredClone(session),
+      }
+    : null;
+}
+export function undoMaster(s, snapshot) {
+  const entry = s.entries.find((e) => e.id === snapshot?.entryId);
+  if (!entry) return false;
+  entry.mastered = snapshot.mastered;
+  entry.updated_at = new Date().toISOString();
+  Object.assign(getSession(s, snapshot.scope), snapshot.session);
+  return true;
+}
 export function classifyImport(records, state) {
   const seen = [];
   return records.map((r, index) => {

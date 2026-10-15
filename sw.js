@@ -1,4 +1,4 @@
-const CACHE = "gekka-shobo-shell-v3";
+const CACHE = "gekka-shobo-shell-v4";
 const FILES = [
   "./",
   "./index.html",

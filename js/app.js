@@ -7,6 +7,9 @@ import {
   studyEntries,
   getSession,
   advance,
+  seekStudy,
+  captureMasterUndo,
+  undoMaster,
   classifyImport,
   applyImport,
   validateBackup,
@@ -18,6 +21,7 @@ const app = document.querySelector("#app"),
   audio = new AudioManager();
 let state,
   busy = false,
+  masterUndo = null,
   preview = null,
   backupPreview = null,
   editing = null,
@@ -402,6 +406,24 @@ function study(scope) {
       ),
     ),
   );
+  const undoButton = button(
+    "元に戻す",
+    async () => {
+      const snapshot = masterUndo;
+      if (!snapshot || snapshot.scope !== scope) return;
+      if (
+        await change((s) => undoMaster(s, snapshot), { renderAfter: false })
+      ) {
+        masterUndo = null;
+        render();
+      }
+    },
+    "subtle compact undo-master",
+    {
+      disabled: !masterUndo || masterUndo.scope !== scope,
+      "aria-label": "覚えた操作を元に戻す",
+    },
+  );
   if (!e) {
     const finished = all.length > 0;
     app.append(
@@ -432,6 +454,7 @@ function study(scope) {
             ? "全語習得しました。おつかれさまでした。"
             : "ことばを追加して、学習を始めましょう。",
         ),
+        undoButton,
         link("書房に戻る", "#home", "button primary"),
         finished
           ? button("一覧で未習得に戻す", () => {
@@ -444,13 +467,64 @@ function study(scope) {
     );
     return;
   }
+  const position = entries.findIndex((x) => x.id === e.id);
+  const positionText = h(
+    "output",
+    { id: "study-position" },
+    `${position + 1} / ${entries.length}`,
+  );
+  const slider = h("input", {
+    type: "range",
+    min: 1,
+    max: entries.length,
+    step: 1,
+    value: position + 1,
+    "aria-label": "カードの位置",
+    "aria-describedby": "study-position",
+    disabled: entries.length === 1,
+    onInput: (ev) => {
+      positionText.textContent = `${ev.target.value} / ${entries.length}`;
+    },
+    onChange: async (ev) => {
+      if (
+        !(await change((s) => seekStudy(s, scope, Number(ev.target.value) - 1)))
+      )
+        render();
+    },
+  });
   app.append(
     h(
-      "div",
-      { class: "stats" },
-      `${entries.findIndex((x) => x.id === e.id) + 1} / ${entries.length}　·　${session.round} 周目　${scope === "star" ? "習得済みも出題" : ""}`,
+      "section",
+      { class: "study-progress", "aria-label": "学習進捗" },
+      h(
+        "div",
+        { class: "stats" },
+        positionText,
+        h(
+          "span",
+          {},
+          ` · ${session.round} 周目 ${scope === "star" ? " · 習得済みも出題" : ""}`,
+        ),
+      ),
+      h(
+        "div",
+        { class: "position-controls" },
+        button(
+          "«",
+          () => change((s) => seekStudy(s, scope, 0)),
+          "subtle compact",
+          { "aria-label": "最初へ", title: "最初へ" },
+        ),
+        slider,
+        button(
+          "»",
+          () => change((s) => seekStudy(s, scope, entries.length - 1)),
+          "subtle compact",
+          { "aria-label": "最後へ", title: "最後へ" },
+        ),
+      ),
+      progress(all.filter((x) => x.mastered).length, all.length),
     ),
-    progress(all.filter((x) => x.mastered).length, all.length),
   );
   const direction = h(
     "select",
@@ -464,7 +538,36 @@ function study(scope) {
       s.settings.direction = direction.value;
       getSession(s, scope).back = false;
     });
-  app.append(direction);
+  app.append(h("div", { class: "study-options" }, direction, undoButton));
+  app.append(
+    h(
+      "div",
+      { class: "card-tools" },
+      p("☆ 苦手　✓ 覚えた", "icon-guide"),
+      button(
+        e.starred ? "★" : "☆",
+        async () => {
+          audio.play("star", state.settings);
+          await change((s) => {
+            const item = s.entries.find((x) => x.id === e.id);
+            item.starred = !item.starred;
+            item.updated_at = new Date().toISOString();
+          });
+        },
+        "star icon-button" + (e.starred ? " active" : ""),
+        {
+          "aria-label": "★ 苦手",
+          "aria-pressed": String(e.starred),
+          title: "苦手の登録・解除",
+        },
+      ),
+      button("✓", () => next(true), "icon-button master-button", {
+        "aria-label": "覚えた！",
+        title: "覚えた！ 次のカードへ",
+      }),
+    ),
+  );
+
   const chinese =
     state.settings.direction === "zh-ja" ? !session.back : session.back;
   const card = h(
@@ -528,32 +631,19 @@ function study(scope) {
     p("タップで裏返す · 長押しで文字を選択", "flip-hint"),
     h(
       "div",
-      { class: "actions toolbar" },
-      button(
-        e.starred ? "★ 苦手" : "☆ 苦手",
-        async () => {
-          audio.play("star", state.settings);
-          await change((s) => {
-            const item = s.entries.find((x) => x.id === e.id);
-            item.starred = !item.starred;
-            item.updated_at = new Date().toISOString();
-          });
-        },
-        "star" + (e.starred ? " active" : ""),
-        { "aria-pressed": String(e.starred) },
-      ),
-      button("詳細を見る", () => goDetail(e.id)),
-    ),
-    h(
-      "div",
       { class: "actions study-actions" },
-      button("次へ", () => next(false)),
-      button("覚えた！", () => next(true), "primary"),
+      button("詳細を見る", () => goDetail(e.id)),
+      button("次へ", () => next(false), "primary"),
     ),
   );
   async function next(master) {
     audio.play(master ? "master" : "next", state.settings);
-    if (await change((s) => advance(s, scope, master))) {
+    const snapshot = master ? captureMasterUndo(state, scope) : null;
+    if (
+      await change((s) => advance(s, scope, master), { renderAfter: false })
+    ) {
+      if (master) masterUndo = snapshot;
+      render();
       if (!studyEntries(state, scope).length && master)
         setTimeout(() => audio.play("clear", state.settings), 280);
       else if (master) {
@@ -1535,6 +1625,7 @@ function settings() {
                 ) {
                   backupPreview = null;
                   listScope = "all";
+                  masterUndo = null;
                   toast("バックアップを復元しました");
                   render();
                 }
