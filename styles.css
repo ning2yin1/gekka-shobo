@@ -846,7 +846,7 @@ main.study:has(.clear) {
     inset 0 0 0 6px #dcc6946b;
   cursor: pointer;
   text-align: center;
-  touch-action: manipulation;
+  touch-action: pan-y pinch-zoom;
   user-select: text;
   -webkit-user-select: text;
   overflow-wrap: anywhere;
@@ -1127,7 +1127,7 @@ body.is-study #toast {
 }
 .study .study-actions {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (max-height: 600px) {
   main.study {
@@ -1164,4 +1164,41 @@ body.is-study #toast {
   text-shadow:
     0 2px 8px #11182e,
     0 0 18px #11182e;
+}
+
+.flashcard.dragging {
+  transition: none;
+  will-change: transform;
+}
+.flashcard.swipe-next {
+  animation: swipe-next 160ms ease-out;
+}
+.flashcard.swipe-previous {
+  animation: swipe-previous 160ms ease-out;
+}
+@keyframes swipe-next {
+  from {
+    transform: translateX(28px);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes swipe-previous {
+  from {
+    transform: translateX(-28px);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flashcard.swipe-next,
+  .flashcard.swipe-previous {
+    animation: none;
+  }
 }

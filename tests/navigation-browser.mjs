@@ -137,7 +137,6 @@ try {
       JSON.stringify({ width, height, ...sizes }),
     );
     for (const name of [
-      "次へ",
       "詳細を見る",
       "覚えた！",
       "★ 苦手",

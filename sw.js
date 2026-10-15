@@ -1,10 +1,11 @@
-const CACHE = "gekka-shobo-shell-v5";
+const CACHE = "gekka-shobo-shell-v6";
 const FILES = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
   "./js/app.js",
+  "./js/gestures.js",
   "./js/model.js",
   "./js/db.js",
   "./js/parsers.js",

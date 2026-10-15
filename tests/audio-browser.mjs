@@ -214,7 +214,7 @@ try {
   assert.equal(afterRoute.plays, initial.plays);
   assert.equal(afterRoute.paused, false);
   assert.ok(afterRoute.time >= initial.time);
-  await page.getByRole("button", { name: "次へ", exact: true }).click();
+  await page.locator(".flashcard").press("ArrowLeft");
   assert.equal(await page.evaluate(() => window.__music[0].paused), false);
   // Tone synthesis uses multiple partials / filtered noise and bounded voices.
   const effects = await page.evaluate(async () => {
@@ -305,7 +305,7 @@ try {
     { timeout: 5000 },
   );
   const cached = await page.evaluate(async () => {
-    const c = await caches.open("gekka-shobo-shell-v5");
+    const c = await caches.open("gekka-shobo-shell-v6");
     return !!(await c.match(new URL("./audio/bgm.mp3", location.href)));
   });
   assert.equal(cached, true);

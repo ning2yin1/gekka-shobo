@@ -129,6 +129,19 @@ export function advance(s, scope, master = false) {
   session.back = false;
   return session;
 }
+// Forward wrapping counts a round; backward and singleton moves do not.
+export function moveStudy(s, scope, direction) {
+  if (direction !== 1 && direction !== -1) return;
+  const session = getSession(s, scope),
+    entries = studyEntries(s, scope);
+  if (!entries.length) return;
+  const index = entries.findIndex((e) => e.id === session.currentId);
+  if (entries.length > 1 && direction === 1 && index === entries.length - 1)
+    session.round++;
+  session.currentId =
+    entries[(index + direction + entries.length) % entries.length].id;
+  session.back = false;
+}
 // Change position within the current eligible queue without advancing a round.
 export function seekStudy(s, scope, index) {
   const entries = studyEntries(s, scope);

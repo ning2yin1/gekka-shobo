@@ -134,13 +134,13 @@ try {
     await page.locator(".flashcard .meaning").textContent(),
     "思いもよらなかった",
   );
-  await click("次へ");
+  await page.locator(".flashcard").press("ArrowLeft");
   await page.waitForTimeout(100);
   assert.equal(
     await page.locator(".flashcard .meaning").textContent(),
     "タクシー",
   );
-  await click("次へ");
+  await page.locator(".flashcard").press("ArrowLeft");
   await page.waitForTimeout(100);
   assert.equal(
     await page.locator(".flashcard .meaning").textContent(),
@@ -415,7 +415,7 @@ try {
         true,
       );
       assert.equal(await page.locator(".bottom-nav").isVisible(), false);
-      for (const name of ["次へ", "覚えた！", "詳細を見る", "★ 苦手"]) {
+      for (const name of ["覚えた！", "詳細を見る", "★ 苦手"]) {
         const buttonBox = await page
           .getByRole("button", { name, exact: true })
           .boundingBox();

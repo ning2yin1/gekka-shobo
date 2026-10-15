@@ -7,6 +7,7 @@ import {
   studyEntries,
   getSession,
   advance,
+  moveStudy,
   seekStudy,
   captureMasterUndo,
   undoMaster,
@@ -16,12 +17,14 @@ import {
   textFields,
 } from "./model.js";
 import { textRecords, csvRecords, exportCSV } from "./parsers.js";
+import { bindCardGestures } from "./gestures.js";
 import { AudioManager } from "./audio.js";
 const app = document.querySelector("#app"),
   audio = new AudioManager();
 let state,
   busy = false,
   masterUndo = null,
+  swipeHintShown = false,
   preview = null,
   backupPreview = null,
   editing = null,
@@ -389,7 +392,11 @@ function study(scope) {
     return;
   }
   app.className = "study";
-  const session = getSession(state, scope),
+  // Rendering must not add an unsaved session to the persistence baseline.
+  const session = getSession(
+      { ...state, sessions: state.sessions.map((x) => ({ ...x })) },
+      scope,
+    ),
     entries = studyEntries(state, scope),
     all = orderedEntries(state, scope),
     e = entries.find((e) => e.id === session.currentId);
@@ -586,6 +593,8 @@ function study(scope) {
       role: "button",
       tabindex: 0,
       "aria-label": "カードを裏返す",
+      "aria-description":
+        "タップで裏返す。左スワイプか左矢印キーで次、右スワイプか右矢印キーで前。長押しで文字を選択。",
       "aria-pressed": String(session.back),
     },
     h(
@@ -595,20 +604,6 @@ function study(scope) {
     ),
     chinese ? Chinese(e) : h("div", { class: "meaning" }, e.meaning),
   );
-  let down = 0,
-    moved = false,
-    px = 0,
-    py = 0;
-  card.onpointerdown = (ev) => {
-    down = performance.now();
-    moved = false;
-    px = ev.clientX;
-    py = ev.clientY;
-  };
-  card.onpointermove = (ev) => {
-    if (Math.abs(ev.clientX - px) + Math.abs(ev.clientY - py) > 10)
-      moved = true;
-  };
   const flip = async () => {
     if (window.getSelection()?.toString()) return;
     audio.play("flip", state.settings);
@@ -620,29 +615,38 @@ function study(scope) {
       document.querySelector(".flashcard")?.classList.add("flipping");
     }
   };
-  card.onclick = () => {
-    if (
-      moved ||
-      performance.now() - down > 450 ||
-      window.getSelection()?.toString()
-    )
-      return;
-    flip();
-  };
-  card.onkeydown = (ev) => {
-    if (ev.key === "Enter" || ev.key === " ") {
-      ev.preventDefault();
-      flip();
+  const move = async (direction) => {
+    if (busy) return;
+    if (await change((s) => moveStudy(s, scope, direction))) {
+      audio.play("next", state.settings);
+      if (entries.length > 1)
+        document
+          .querySelector(".flashcard")
+          ?.classList.add(direction === 1 ? "swipe-next" : "swipe-previous");
     }
   };
+  bindCardGestures(card, { flip, move, blocked: () => busy });
+  if (!swipeHintShown) {
+    swipeHintShown = true;
+    try {
+      if (!localStorage.getItem("gekka-shobo-swipe-hint-v1")) {
+        toast("左右にスワイプしてカードを移動できます");
+        localStorage.setItem("gekka-shobo-swipe-hint-v1", "1");
+      }
+    } catch {
+      toast("左右にスワイプしてカードを移動できます");
+    }
+  }
   app.append(
     card,
-    p("タップで裏返す · 長押しで文字を選択", "flip-hint"),
+    p(
+      "← 次のカード · 前のカード →　タップで裏返す · 長押しで文字を選択",
+      "flip-hint",
+    ),
     h(
       "div",
       { class: "actions study-actions" },
       button("詳細を見る", () => goDetail(e.id)),
-      button("次へ", () => next(false), "primary"),
     ),
   );
   async function next(master) {
