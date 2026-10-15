@@ -178,16 +178,20 @@ small {
 }
 .book {
   position: relative;
-  aspect-ratio: 1430 / 1100;
+  /* Source y=120..975 includes all pixels with alpha > 1 and breathing room. */
+  aspect-ratio: 1430 / 855;
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: url("./art/bookshelf-frame.png") center / contain no-repeat;
+  background: url("./art/bookshelf-frame.png") center 48.97959184% / 100% auto
+    no-repeat;
+  margin: 8px 0;
   box-shadow: none;
 }
 .book-content {
   position: absolute;
-  inset: 25% 12% 16% 17%;
+  /* Same content coordinates in the source PNG, relative to its cropped viewport. */
+  inset: 18.12865497% 12% 5.96491228% 17%;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -761,9 +765,9 @@ main.study {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
   align-content: stretch;
-  gap: 8px;
-  padding: calc(12px + env(safe-area-inset-top)) 20px
-    calc(12px + env(safe-area-inset-bottom));
+  gap: 6px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px
+    calc(10px + env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -821,7 +825,7 @@ main.study:has(.clear) {
   border: 0;
   border-radius: 0;
   color: var(--ink);
-  background: url("./art/flashcard-frame.png") center / contain no-repeat;
+  background: none;
   box-shadow: none;
   cursor: pointer;
   text-align: center;
@@ -830,11 +834,23 @@ main.study:has(.clear) {
   -webkit-user-select: text;
   overflow-wrap: anywhere;
 }
+/* Source viewport x=40..1105, y=0..1356 preserves flowers, tassels and ribbon.
+   Fit this viewport without changing the source image scale on either axis. */
+.flashcard::before {
+  content: "";
+  position: absolute;
+  width: min(100cqw, calc(100cqh * 1065 / 1356));
+  height: min(100cqh, calc(100cqw * 1356 / 1065));
+  background: url("./art/flashcard-frame.png") center top / 107.51173709% auto
+    no-repeat;
+  pointer-events: none;
+  z-index: -1;
+}
 .card-text {
   touch-action: pan-y pinch-zoom;
-  /* Fitted image = min(slot width, slot height * source aspect). */
-  width: min(66cqw, calc(100cqh * 1145 / 1374 * 0.66));
-  max-height: min(66cqh, calc(100cqw * 1374 / 1145 * 0.66));
+  /* Text stays inside the same source-image writing area after the crop. */
+  width: min(71cqw, calc(100cqh * 1065 / 1356 * 0.71));
+  max-height: min(67cqh, calc(100cqw * 1356 / 1065 * 0.67));
   overflow-y: auto;
   scrollbar-width: thin;
   padding: 4px 0;
@@ -1023,10 +1039,26 @@ body.is-study #toast {
   display: none;
 }
 
-/* Position controls and secondary actions keep the lower edge dedicated to Next. */
+/* Compact progress controls retain 44px touch targets. */
 .study-progress {
   min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(74px, 124px) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
 }
+.study-progress > .stats {
+  font-size: 10px;
+  line-height: 1.25;
+}
+.study-progress output {
+  display: block;
+  font-size: 12px;
+}
+.study-progress > .progress {
+  grid-column: 1 / -1;
+}
+
 .position-controls {
   display: flex;
   align-items: center;
@@ -1070,7 +1102,7 @@ body.is-study #toast {
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  margin-bottom: -4px;
+  margin-bottom: 0;
 }
 .icon-guide {
   margin: 0 auto 0 0;
@@ -1199,4 +1231,9 @@ body.is-study #toast {
 .study-progress,
 .card-tools {
   padding-inline: 8px;
+}
+
+
+@media (max-width: 360px) {
+  .study-progress { grid-template-columns: 100px minmax(0, 1fr); }
 }

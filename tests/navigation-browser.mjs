@@ -42,6 +42,12 @@ try {
       created_at: new Date().toISOString(),
     });
     for (const e of s.entries) m.addMembership(s, e.id, "visual-book");
+    s.books.push({
+      id: "spacing-book",
+      name: "表現の書架",
+      created_at: new Date().toISOString(),
+    });
+    for (const e of s.entries) m.addMembership(s, e.id, "spacing-book");
     s.entries[1].mastered = true;
     s.settings.bgmVolume = 0.42;
     s.settings.sound = true;
@@ -134,6 +140,18 @@ try {
     [430, 932],
   ]) {
     await page.setViewportSize({ width, height });
+    if (height >= 568) {
+      const textArea = await page.locator(".card-text").evaluate((el) => ({
+        scroll: el.scrollHeight,
+        visible: el.clientHeight,
+      }));
+      assert.ok(
+        textArea.scroll <= textArea.visible + 1,
+        JSON.stringify({ width, height, ...textArea }),
+      );
+    }
+    if (width === 375)
+      await page.screenshot({ path: ".test-results/frame-spacing-375.png" });
     const sizes = await page.evaluate(() => {
       const a = document.querySelector("main.study");
       return { scroll: a.scrollHeight, client: a.clientHeight };
@@ -213,8 +231,8 @@ try {
     };
   });
   assert.match(frame.image, /bookshelf-frame.png/);
-  assert.equal(frame.fit, "contain");
-  assert.ok(Math.abs(frame.ratio - 1430 / 1100) < 0.01);
+  assert.equal(frame.fit, "100% auto");
+  assert.ok(Math.abs(frame.ratio - 1430 / 855) < 0.01);
   assert.equal(frame.shadow, "none");
   assert.equal(frame.oldDecoration, "none");
   const innerBook = await page
@@ -229,6 +247,18 @@ try {
     JSON.stringify(innerBook),
   );
 
+  const bookGap = await page.locator(".book").evaluateAll((books) => {
+    const first = books[0].getBoundingClientRect(),
+      second = books[1].getBoundingClientRect();
+    return second.top - first.bottom;
+  });
+  assert.ok(bookGap >= 8 && bookGap <= 9, String(bookGap));
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight > innerHeight,
+    ),
+    true,
+  );
   await page.screenshot({ path: ".test-results/bookshelf-frame.png" });
 
   await context.setOffline(false);

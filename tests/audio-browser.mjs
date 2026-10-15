@@ -305,7 +305,7 @@ try {
     { timeout: 5000 },
   );
   const cached = await page.evaluate(async () => {
-    const c = await caches.open("gekka-shobo-shell-v7");
+    const c = await caches.open("gekka-shobo-shell-v8");
     return !!(await c.match(new URL("./audio/bgm.mp3", location.href)));
   });
   assert.equal(cached, true);
