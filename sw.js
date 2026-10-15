@@ -1,4 +1,4 @@
-const CACHE = "gekka-shobo-shell-v6";
+const CACHE = "gekka-shobo-shell-v7";
 const FILES = [
   "./",
   "./index.html",
@@ -6,15 +6,15 @@ const FILES = [
   "./manifest.webmanifest",
   "./js/app.js",
   "./js/gestures.js",
+  "./art/library-background.png",
+  "./art/bookshelf-frame.png",
+  "./art/study-background.png",
+  "./art/flashcard-frame.png",
   "./js/model.js",
   "./js/db.js",
   "./js/parsers.js",
   "./js/audio.js",
   "./js/music.js",
-  "./art/reading-room.svg",
-  "./art/moonlit-library.png",
-  "./art/moon-emblem.png",
-  "./art/page-corners.svg",
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

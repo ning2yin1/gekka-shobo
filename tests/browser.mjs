@@ -451,7 +451,7 @@ try {
     .evaluate((el) => (el.textContent = "月光照進靜靜的書房".repeat(40)));
   assert.ok(
     await page
-      .locator("main.study")
+      .locator(".card-text")
       .evaluate((el) => el.scrollHeight > el.clientHeight),
   );
   assert.ok(
@@ -460,7 +460,7 @@ try {
     ),
   );
   await page
-    .locator("main.study")
+    .locator(".card-text")
     .evaluate((el) => (el.scrollTop = el.scrollHeight));
   const lastControl = await page
     .getByRole("button", { name: "覚えた！", exact: true })
@@ -469,7 +469,7 @@ try {
   await page
     .locator(".traditional")
     .evaluate((el, text) => (el.textContent = text), originalTraditional);
-  await page.locator("main.study").evaluate((el) => (el.scrollTop = 0));
+  await page.locator(".card-text").evaluate((el) => (el.scrollTop = 0));
   await page.emulateMedia({ reducedMotion: "reduce" });
   assert.equal(
     await page

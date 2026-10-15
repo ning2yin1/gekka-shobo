@@ -36,6 +36,12 @@ try {
       e.starred = true;
       e.created_at = new Date(1700000000000 + i).toISOString();
     });
+    s.books.push({
+      id: "visual-book",
+      name: "日々の台湾華語",
+      created_at: new Date().toISOString(),
+    });
+    for (const e of s.entries) m.addMembership(s, e.id, "visual-book");
     s.entries[1].mastered = true;
     s.settings.bgmVolume = 0.42;
     s.settings.sound = true;
@@ -157,17 +163,18 @@ try {
   await context.setOffline(true);
   await page.reload();
   await range.waitFor();
-  assert.equal(
-    await page.locator(".card-emblem").evaluate(async (img) => {
-      await img.decode();
-      return img.naturalWidth;
-    }),
-    1254,
-  );
   const assets = await page.evaluate(async () => {
     return Promise.all(
-      ["moonlit-library.png", "moon-emblem.png"].map(async (name) => {
+      [
+        "library-background.png",
+        "bookshelf-frame.png",
+        "study-background.png",
+        "flashcard-frame.png",
+      ].map(async (name) => {
         const r = await fetch("./art/" + name);
+        const decoded = new Image();
+        decoded.src = "./art/" + name;
+        await decoded.decode();
         return [
           r.status,
           r.headers.get("Content-Type"),
@@ -177,19 +184,53 @@ try {
     );
   });
   assert.deepEqual(assets, [
-    [200, "image/png", 2136030],
-    [200, "image/png", 769671],
+    [200, "image/png", 1971052],
+    [200, "image/png", 1627446],
+    [200, "image/png", 2171239],
+    [200, "image/png", 2094672],
   ]);
   await page.setViewportSize({ width: 375, height: 667 });
   await page.evaluate(() => (location.hash = "#home"));
   await page.getByRole("heading", { name: "ことばに、月の栞を。" }).waitFor();
   assert.match(
     await page
-      .locator(".hero-art")
+      .locator(".sky")
       .evaluate((el) => getComputedStyle(el).backgroundImage),
-    /moonlit-library.png/,
+    /library-background.png/,
   );
   await page.screenshot({ path: ".test-results/supplied-art-home.png" });
+  const book = page.locator(".book").first();
+  await book.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const frame = await book.evaluate((el) => {
+    const style = getComputedStyle(el),
+      box = el.getBoundingClientRect();
+    return {
+      image: style.backgroundImage,
+      fit: style.backgroundSize,
+      ratio: box.width / box.height,
+      shadow: style.boxShadow,
+      oldDecoration: getComputedStyle(el, "::after").content,
+    };
+  });
+  assert.match(frame.image, /bookshelf-frame.png/);
+  assert.equal(frame.fit, "contain");
+  assert.ok(Math.abs(frame.ratio - 1430 / 1100) < 0.01);
+  assert.equal(frame.shadow, "none");
+  assert.equal(frame.oldDecoration, "none");
+  const innerBook = await page
+    .locator(".book-content")
+    .first()
+    .evaluate((el) => ({
+      content: el.scrollHeight,
+      visible: el.clientHeight,
+    }));
+  assert.ok(
+    innerBook.content <= innerBook.visible + 1,
+    JSON.stringify(innerBook),
+  );
+
+  await page.screenshot({ path: ".test-results/bookshelf-frame.png" });
+
   await context.setOffline(false);
   // Only remaining unmastered card -> clear screen -> undo.
   await page.evaluate(async () => {

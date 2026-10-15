@@ -273,30 +273,34 @@ function home() {
         { class: "book" },
         h(
           "div",
-          { class: "section-top" },
-          h("h3", {}, b.name),
-          button("編集", () => bookEditor(b), "subtle compact"),
-        ),
-        stats(entries),
-        h(
-          "div",
-          { class: "actions" },
-          link("学習する", "#study/" + b.id, "button primary"),
-          button("一覧を見る", () => {
-            listScope = b.id;
-            search = "";
-            page = 0;
-            location.hash = "#list";
-            render();
-          }),
-          button(
-            "追加",
-            () => {
-              editing = null;
-              addMode = "manual";
-              location.hash = "#add/" + b.id;
-            },
-            "compact",
+          { class: "book-content" },
+          h(
+            "div",
+            { class: "section-top" },
+            h("h3", {}, b.name),
+            button("編集", () => bookEditor(b), "subtle compact"),
+          ),
+          stats(entries),
+          h(
+            "div",
+            { class: "actions" },
+            link("学習する", "#study/" + b.id, "button primary"),
+            button("一覧を見る", () => {
+              listScope = b.id;
+              search = "";
+              page = 0;
+              location.hash = "#list";
+              render();
+            }),
+            button(
+              "追加",
+              () => {
+                editing = null;
+                addMode = "manual";
+                location.hash = "#add/" + b.id;
+              },
+              "compact",
+            ),
           ),
         ),
       ),
@@ -550,15 +554,6 @@ function study(scope) {
     h(
       "div",
       { class: "card-tools" },
-      h("img", {
-        class: "card-emblem",
-        src: "./art/moon-emblem.png",
-        alt: "",
-        width: 44,
-        height: 44,
-        "aria-hidden": "true",
-        draggable: "false",
-      }),
       p("☆ 苦手　✓ 覚えた", "icon-guide"),
       button(
         e.starred ? "★" : "☆",
@@ -599,10 +594,14 @@ function study(scope) {
     },
     h(
       "div",
-      { class: "face-label" },
-      session.back ? "ANSWER · 答え" : "QUESTION · ことば",
+      { class: "card-text" },
+      h(
+        "div",
+        { class: "face-label" },
+        session.back ? "ANSWER · 答え" : "QUESTION · ことば",
+      ),
+      chinese ? Chinese(e) : h("div", { class: "meaning" }, e.meaning),
     ),
-    chinese ? Chinese(e) : h("div", { class: "meaning" }, e.meaning),
   );
   const flip = async () => {
     if (window.getSelection()?.toString()) return;
