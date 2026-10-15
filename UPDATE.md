@@ -5,17 +5,19 @@
 - カード直上に44pxの☆／★と✓のアイコンを配置。短い意味の表示、アクセシブルな名前と操作説明も付けています。
 - 「覚えた！」は既存の効果音・光の粒を維持。「元に戻す」は直前の習得操作だけを取り消して位置・周回・面を復元します。クリア画面にも設置。履歴はメモリ内1件で、再読み込み後は利用できません。
 - 小さい縦画面に合わせて余白と行配置を調整。通常カードは320×480から430×932までスクロール不要。長文・詳細・一覧はスクロール可能です。
-- DB名・バージョン・形式は変更していません。既存データを初期化する処理は追加していません。BGM・効果音設定と旧JSONの互換性を維持。キャッシュはv4です。
+- DB名・バージョン・形式は変更していません。既存データを初期化する処理は追加していません。BGM・効果音設定と旧JSONの互換性を維持。キャッシュはv5です。
 
-## 画像：元ファイルの受領待ち
+## 添付画像の組み込み
 
-今回のチャット内画像は目視で確認できますが、作業環境に画像ファイルやダウンロード可能な参照が渡っていません。そのため今回のコミットでは画像を差し替えていません。既存の線画と装飾を維持しています。
+image.zipの1.pngをart/moonlit-library.png、3.pngをart/moon-emblem.pngとして、元ファイルのバイト列のまま配置しました。
 
-元ファイル受領後、月夜の書房はホームのメインビジュアルへ、月の紋章はカード上部へ配置する予定です。キャッチコピーは引き続きHTMLで表示し、画像へ埋め込みません。画像追加後は小型画面とオフラインの再検証・キャッシュ更新が必要です。
+- 月夜の書房：ホームのメインビジュアルへ。右側の月と書房の景色を残すトリミングで表示し、左側へ既存のキャッチコピーをHTMLで重ねています。文字の影で視認性を補っています。
+- 月の紋章：カード直上の操作列の左側へ44pxで配置。古紙色の淡い背景で馴染ませ、カード本文の広さと操作のタップ領域を維持しました。装飾画像なので読み上げやタップの対象から除外しています。
+- Service Workerのキャッシュに2枚を追加し、キャッシュをv5に更新。画像はオフラインでも表示します。
 
 ## 変更ファイル
 
-js/app.js、js/model.js、styles.css、sw.js、package.json、README.md、UPDATE.md、TESTING.md、tests/browser.mjs、tests/audio-browser.mjs。追加：tests/navigation.test.js、tests/navigation-browser.mjs。
+js/app.js、js/model.js、styles.css、sw.js、package.json、README.md、UPDATE.md、TESTING.md、tests/browser.mjs、tests/audio-browser.mjs。追加：tests/navigation.test.js、tests/navigation-browser.mjs、art/moonlit-library.png、art/moon-emblem.png。
 
 ## 確認と公開
 

@@ -15,8 +15,11 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(process.env.APP_URL || "http://127.0.0.1:8002/gekka-shobo/");
   // First activation reloads the app; wait for that reload before seeding.
-  await page.waitForFunction(() => !!navigator.serviceWorker.controller &&
-    performance.getEntriesByType("navigation")[0]?.type === "reload");
+  await page.waitForFunction(
+    () =>
+      !!navigator.serviceWorker.controller &&
+      performance.getEntriesByType("navigation")[0]?.type === "reload",
+  );
   await page.getByRole("heading", { name: "ことばに、月の栞を。" }).waitFor();
   await page.evaluate(async () => {
     const m = await import("./js/model.js"),
@@ -151,6 +154,44 @@ try {
     }
   }
   await page.screenshot({ path: ".test-results/navigation.png" });
+  // The supplied assets must remain available after an offline reload.
+  await context.setOffline(true);
+  await page.reload();
+  await range.waitFor();
+  assert.equal(
+    await page.locator(".card-emblem").evaluate(async (img) => {
+      await img.decode();
+      return img.naturalWidth;
+    }),
+    1254,
+  );
+  const assets = await page.evaluate(async () => {
+    return Promise.all(
+      ["moonlit-library.png", "moon-emblem.png"].map(async (name) => {
+        const r = await fetch("./art/" + name);
+        return [
+          r.status,
+          r.headers.get("Content-Type"),
+          (await r.arrayBuffer()).byteLength,
+        ];
+      }),
+    );
+  });
+  assert.deepEqual(assets, [
+    [200, "image/png", 2136030],
+    [200, "image/png", 769671],
+  ]);
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.evaluate(() => (location.hash = "#home"));
+  await page.getByRole("heading", { name: "ことばに、月の栞を。" }).waitFor();
+  assert.match(
+    await page
+      .locator(".hero-art")
+      .evaluate((el) => getComputedStyle(el).backgroundImage),
+    /moonlit-library.png/,
+  );
+  await page.screenshot({ path: ".test-results/supplied-art-home.png" });
+  await context.setOffline(false);
   // Only remaining unmastered card -> clear screen -> undo.
   await page.evaluate(async () => {
     const db = await import("./js/db.js"),
@@ -174,7 +215,7 @@ try {
   );
   assert.deepEqual(errors, []);
   console.log(
-    "Navigation passed: saved seek, eligible order, flags/round retention, front reset, first/last, star/mastered queue, undo after move and completion, settings retention, five mobile sizes/44px controls.",
+    "Navigation passed: saved seek, eligible order, flags/round retention, front reset, first/last, star/mastered queue, undo after move and completion, settings retention, five mobile sizes/44px controls, supplied images decoded and fetched offline.",
   );
 } finally {
   await browser.close();

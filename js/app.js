@@ -543,6 +543,15 @@ function study(scope) {
     h(
       "div",
       { class: "card-tools" },
+      h("img", {
+        class: "card-emblem",
+        src: "./art/moon-emblem.png",
+        alt: "",
+        width: 44,
+        height: 44,
+        "aria-hidden": "true",
+        draggable: "false",
+      }),
       p("☆ 苦手　✓ 覚えた", "icon-guide"),
       button(
         e.starred ? "★" : "☆",
